@@ -6,9 +6,12 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb}
-\usepackage{algorithm2e}
+\usepackage[noend]{algorithm2e}
 \usepackage{float}
-
+\usepackage{xcolor}
+\usepackage{bbm}
+\usepackage{placeins}
+\usepackage{enumitem}
 % To make this come out properly in landscape mode, do one of the following
 % 1.
 %  pdflatex rl_cheatsheet.tex
@@ -18,6 +21,9 @@
 %  dvips -P pdf  -t landscape rl_cheatsheet.dvi
 %  ps2pdf rl_cheatsheet.ps
 
+
+% 2022-01
+% Thomas - made changes for Stanford's CS234 2022 RL lecture
 
 % If you're reading this, be prepared for confusion.  Making this was
 % a learning experience for me, and it shows.  Much of the placement
@@ -97,361 +103,446 @@
 \setlength{\multicolsep}{1pt}
 \setlength{\columnsep}{2pt}
 
-\begin{center}
-     \Large{Reinforcement Learning Cheat Sheet} \\
-\end{center}
-
-\section{Agent-Environment Interface}
-\includegraphics[width=\linewidth]{./images/Agent-Environment.png}
-The Agent at each step $t$ receives a representation of the environment's \emph{state}, $S_t \in S$ and it selects an action $A_t \in A(s)$. Then, as a consequence of its action the agent receives a \emph{reward}, $R_{t + 1} \in R \in \mathbb{R}$.
-
-\section{Policy}
-A \emph{policy} is a mapping from a state to an action
-\begin{equation}
-\pi_t(s|a)
-\label{eq: policy}
-\end{equation}
-That is the probability of select an action $A_t = a$ if $S_t = s$.
-
 \newlength{\MyLen}
 \settowidth{\MyLen}{\texttt{letterpaper}/\texttt{a4paper} \ }
 
+\begin{center}
+\centering\Large{CS234 - Reinforcement Learning}\phantom{---}
+\end{center}
 
-\section{Reward}
-The total \emph{reward} is expressed as:
-\begin{equation}
-G_t = \sum_{k = 0}^H \gamma^kr_{t + k + 1}
-\label{eq: total_reward}
-\end{equation}
-Where $\gamma$ is the \emph{discount factor} and $H$ is the \emph{horizon}, that can be infinite.
+%%\section{Agent-Environment Interface}
+%\includegraphics[width=\linewidth]{./images/Agent-Environment.png}
+%\textit{The agent at each step $t$ receives a representation of the environment's state $S_t \in S$ and it selects an action $A_t$. As a consequence  the agent receives a reward $R_{t + 1} \in \mathbb{R}$.}
 
-\subsection{Markov Decision Process}
-A \textbf{Markov Decision Process}, MDP, is a 5-tuple $(S, A, P, R, \gamma)$ where:
-\begin{equation}
-        \begin{array}{l}
-         \text{finite set of states:} \\
-                s \in S \\
-         \text{finite set of actions:} \\
-        a \in A \\
-                 \text{state transition probabilities:} \\
-        p(s' | s, a) = Pr \{S_{t + 1} = s' | S_t = s, A_t = a \} \\
-                \text{expected reward for state-action-nexstate:}\\
-        r(s',s, a) = \mathbb{E}[ R_{t + 1} | S_{t + 1} = s',  S_t = s, A_t = a ]  \\
-        \end{array}
-\end{equation}
 
-\section{Value Function}
-Value function describes \emph{how good} is to be in a specific state $s$ under a certain policy $\pi$. For MDP:
-\begin{equation}
-V_{\pi}(s) = \mathbb{E}[G_t | S_t = s]
-\label{eq: value_func}
-\end{equation}
+\vspace{1mm}
 
-Informally, is the expected return (expected cumulative discounted reward) when starting from $s$ and following $\pi$
+A Markov Reward Process (\textbf{MRP}) is a Markov chain + rewards (everything only depends on the state $R(s_t=s)$).
 
-\subsection{Optimal}
 
-\begin{equation}
-V_*(s) = \max\limits_{\pi} V_\pi(s)
-\label{eq: value_optimal}
-\end{equation}
+The \textbf{total reward} (the \textbf{return}) is 
+\vspace{-3mm}
+\begin{align*}
+G_t &= r_t+\gamma r_{t+1}+\gamma^2 r_{t+2}+\dots
++
+\gamma^{H-1}r_{t+H-1}
+=
+\sum_{k = 0}^{H-1} \gamma^kr_{t + k}.
+\end{align*}
+\vspace{-4mm}
 
-\section{Action-Value (Q) Function}
-We can also denoted the expected reward for state, action pairs.
-\begin{equation}
-q_{\pi}(s, a) = \mathbb{E}_{\pi}\begin{bmatrix} G_t | S_t = s, A_t = a \end{bmatrix}
-\label{eq: q_func}
-\end{equation}
-\subsection{Optimal}
-The optimal value-action function:
+\textbf{Expected return}: 
+\begin{align*}
+V(s)&=\mathbb{E}[G_t|s_t=s]
+=
+R(s)+\gamma\sum_{s'\in\mathcal{S}}P(s'|s)V(s').
+\end{align*}
+Let a $N$-dim statespace,  $V=(V(s_1),\dots,V(s_N))\in\mathbb{R}^N$, $R,V\in\mathbb{R}^N$, and $P\in\mathbb{R}^{N\times N}$ with $P_{ij}=P(s_j|s_i)$. Then, we can write the matrix equation $V=R+\gamma PV$ and invert it $V=(I-\gamma P)^{-1}R$.  Complexity of doing matrix inverse is $O(N^3)$. Otherwise, do,  iteratively over $k$, for all $s\in S$, 
+$$
+V_k(s)=R(s)+\gamma\sum_{s'\in S}P(s'|s)V_{k-1}(s'),
+\ \text{($O(N^2)$ complexity)}$$
 
-\begin{equation}
-q_*(s,a) = \max\limits_{\pi} q^\pi(s,a)
-\label{eq: action_value_optimal}
-\end{equation}
-Clearly, using this new notation we can redefine $V^*$, equation \ref{eq: value_optimal}, using $q^*(s,a)$, equation \ref{eq: action_value_optimal}:
-\begin{equation}
-V_*(s) = \max\limits_{a \in A(s)} q_{\pi*}(s,a)
-\end{equation}
-Intuitively, the above equation express the fact that the value of a state under the optimal policy \textbf{must be equal} to the expected return from the best action from that state.
 
-\section{Bellman Equation}
-An important recursive property emerges for both Value (\ref{eq: value_func}) and Q (\ref{eq: q_func}) functions if we expand them.
-\subsection{Value Function}
-\begin{equation}
-\begin{array}{l l}
-V_{\pi}(s) & = \mathbb{E}_{\pi}\begin{bmatrix}G_t | S_t = s\end{bmatrix} \\
+%\vspace{2mm}
+%\subsection{Markov Decision Process (MDP)}
+A \underline{Markov Decision Process (\textbf{MDP})} is a 5-tuple $(S, A, P, R, \gamma)$ where $P$ is a transition model $P(s_{t+1}=s'|s_t=s,a_t=a)$ and $R$ is reward function $R(s,a)$ and $\gamma\in[0,1]$ is discount factor. 
+
+ 
+\textbf{State-Value Function} (expected return under $\pi$ from $s$):
+\begin{align*}
+V^{\pi}(s) &= \mathbb{E}_\pi[G_t | s_t = s]
+= \mathbb{E}_\pi[r_t+\gamma r_{t+1}+\gamma^2r_{t+2}+\dots | s_t = s].
+\end{align*}
+
+\textbf{Optimal policy}: $\pi^*=\mathop{\arg\max}\limits_\pi V^{\pi}(s)$.
+
+\textbf{State-Action Value Function} (expected return  starting from $s$, taking action $a$, then following $\pi$):
+\begin{align*}
+Q^{\pi}(s,a) &= \mathbb{E}_\pi[G_t | s_t = s, a_t=a]
+\\&= \mathbb{E}_\pi[r_t+\gamma r_{t+1}+\gamma^2r_{t+2}+\dots| s_t = s, a_t=a ]
 \\
-& =  \mathbb{E}_{\pi}\begin{bmatrix}\sum\limits_{k = 0}^{\infty} \gamma^kR_{t + k + 1} | S_t = s \end{bmatrix} \\
-\\
-& = \mathbb{E}_{\pi}\begin{bmatrix}R_{t + 1} + \gamma \sum\limits_{k = 0}^{\infty} \gamma^k R_{t + k + 2} | S_t = s \end{bmatrix} \\
-\\
-& = \underbrace{\sum\limits_{a} \pi(a | s) \sum\limits_{s'}\sum\limits_{r} p(s', r | s, a)}_{\text{Sum of all probabilities $\forall$ possible $r$}} \\
-& \begin{bmatrix} r + \gamma \underbrace{\mathbb{E}_{\pi}\begin{bmatrix} \sum\limits_{k = 0}^{\infty} \gamma^k R_{t + k + 2} | S_{t + 1} = s' \end{bmatrix}}_{\text{Expected reward from } s_{t + 1}} \end{bmatrix} \\
-\\
-& = \sum\limits_{a} \pi(a | s) \sum\limits_{s'}\sum\limits_{r} p(s', r | s, a)\begin{bmatrix} r + \gamma V_{\pi}(s')
-\end{bmatrix}
-\end{array}
-\label{eq: value_bellman}
-\end{equation}
-Similarly, we can do the same for the Q function:
+&=R(s,a)+\gamma\sum_{s'}P(s'|s,a)V^\pi(s')
+\end{align*}
 
-\begin{equation}
-\begin{array}{l l}
-q_{\pi}(s,a) &= \mathbb{E}_{\pi}\begin{bmatrix} G_t | S_t = s, A_t = a \end{bmatrix} \\
-\\
-&= \mathbb{E}_{\pi}\begin{bmatrix} \sum\limits_{k = 0}^{\infty}\gamma^kR_{t + k + 1} | S_t = s, A_t = a \end{bmatrix} \\
-\\
-&= \mathbb{E}_{\pi}\begin{bmatrix}R_{t+1} + \gamma \sum\limits_{k = 0}^{\infty}\gamma^kR_{t + k + 2} | S_t = s, A_t = a \end{bmatrix} \\
-\\
-&=\sum\limits_{s',r} p(s', r| s, a)\begin{bmatrix}r + \gamma \mathbb{E}_{\pi} \begin{bmatrix} \sum\limits_{k = 0}^{\infty} \gamma^k   R_{t + k + 2} | S_{t+1} = s' \end{bmatrix}  \end{bmatrix} \\
-\\
-        &=\sum\limits_{s',r} p(s', r| s, a)\begin{bmatrix}r +\gamma  V_{\pi}(s') \end{bmatrix}\\
-\end{array}
-\label{eq: action_value_bellman}
-\end{equation}
-%
-%\section{Contraction Mapping}
-%
-%\subsection{Definition}
-%
-%Let $(X, d)$ be a metric space and $f: X \rightarrow X$. We say that $f$ is a
-%\emph{contraction} if there is a real number $k \in [0, 1)$ such that
-%\begin{equation*}
-%    d(f(x), f(y)) \leq k d(x, y)
-%\end{equation*}
-%
-%for all $x$ and $y$ in $X$, where the term $k$ is called a \emph{Lipschitz coefficent} for $f$.
-%
-%\subsection{Contraction Mapping theorem}
-%
-%Let $(X,d)$ be a complete metric space and let $f: X \rightarrow X$ be a contraction.
-%Then there is one and only one fixed point $x^\ast$ such that
-%\begin{equation*}
-% f(x^\ast) = x^\ast
-%\end{equation*}
-%
-%Moreover, if $x$ is any point in $X$ and $f^n(x)$ is inductively defined by
-%$f^2(x) = f(f(x))$, $f^3(x)=f(f^2(x))$, \ldots, $f^n(x)=f(f^{n−1}(x))$,
-%then $f^n(x) \rightarrow x^\ast$ as $n \rightarrow \infty$. This theorem guarantees
-%a unique optimal solution for the dynamic programming algorithms detailed below.
+\textbf{Bellman Backup}: 
+$$(BV)(s)=\mathop{\max}\limits_a (R(s,a)+\gamma\sum\limits_{s'}P(s'|s,a)V(s'))$$
+\vspace{-5mm}
+$$(B^\pi V)(s)=\sum\limits_{a}\pi(a|s)\left(R(s,a)+\gamma\sum\limits_{s'}P(s'|s,a)V(s')\right)$$
 
-\section{Dynamic Programming}
-Taking advantages of the subproblem structure of the V and Q function we can find the optimal policy by just \emph{planning}
-\subsection{Policy Iteration}
-We can now find the optimal policy
+\underline{\textbf{Policy Evaluation$(\pi)$:}}
 \begin{algorithm}[H]
-%\SetAlgoLined
- 1. Initialisation \\
- $V(s) \in \mathbb{R}, (\text{e.g } V(s) = 0)$ and $\pi(s) \in A$  for all $s \in S$,\\
- $\Delta \leftarrow 0$ \\
- 2. Policy Evaluation \\
- \While{$\Delta \ge \theta$ (a small positive number)}{
-  \ForEach{$s \in S$} {
-        $v \leftarrow V(s)$\\
-        $V(s) \leftarrow \sum\limits_a \pi(a|s) \sum\limits_{s', r} p(s',r | s, a) \begin{bmatrix}
-                r + \gamma V(s')
-        \end{bmatrix}$ \\
-        $\Delta \leftarrow \max(\Delta, | v - V(s)|)$
-        }
-
- }
- 3. Policy Improvement \\
- \emph{policy-stable} $ \leftarrow $ \emph{true} \\
-  \ForEach{$s \in S$} {
-        \emph{old-action} $\leftarrow \pi(s)$
-        $\pi(s) \leftarrow \argmax\limits_a\sum\limits_{s', r} p(s',r | s, a)  \begin{bmatrix}
-            r + \gamma V(s')
-        \end{bmatrix}$ \\
-        \emph{policy-stable} $\leftarrow$ \emph{old-action} $ = \pi(s)$
+ $V^\pi_0(s) \gets 0$ for all $s$ \\
+ \While{$\|V^\pi_{k+1}-V^\pi_k\|>\epsilon$}{
+  \ForAll{$s \in S$} {
+%        \textbf{Bellman backup}: 
+        $V_{k+1}^\pi(s) =(B^\pi V_k^\pi)(s)$.
+%        =
+%        \sum\limits_{a}\pi(a|s)\left(
+%        r(s,a)+\gamma\sum\limits_{s'}p(s'|s,a)V_{k-1}^\pi(s')
+%        \right)
+%        $
   }
-if \emph{policy-stable} return V $\approx V_*$ and $\pi \approx \pi_*$, else go to 2
-\caption{Policy Iteration}
+ }
 \end{algorithm}
 
-\end{multicols}
+\underline{\textbf{Policy Improvement$(V^\pi)$:}}
+%\begin{algorithm}[H]
+% \ForAll{$s \in S$, $a\in A$} {
+        $
+        Q^{\pi}(s,a)  =R(s,a)+\gamma\sum_{s'}P(s'|s,a)V^\pi(s')
+        \ \forall s\in S, a \in A
+        $
+% }
+\\
+% \ForAll{$s \in S$} {
+        $
+        \pi'(s)  =\mathop{\arg\max}\limits_a Q^{\pi}(s,a)
+        \quad \forall s\in S
+        $
+% }
+%\end{algorithm}
+
+%\hline
+
+\underline{\textbf{Policy Iteration:}}
+\begin{algorithm}[H]
+  $\pi_0(s) \gets \textrm{whatever}(A)$ for all $s$  \\
+ \While{$\|\pi_{k+1}-\pi_k\|>\epsilon$}{
+        $V^\pi_{k}\gets\textrm{PolicyEvaluation}(\pi_k)$ 
+        \\
+        $\pi_{k+1}(s) \gets\textrm{PolicyImprovement}(V^\pi_{k})$ 
+ }
+\end{algorithm}
+
+
+\underline{\textbf{Value Iteration:}}
+\begin{algorithm}[H]
+  $V_0(s) \gets 0$ for all $s$ 
+  \\
+ \While{$\|V_{k+1}-V_k\|>\epsilon$}{
+  \ForAll{$s \in S$} {
+        $V_{k+1}(s) =  (BV_{k})(s)$
+%        \max\limits_a \left(
+%        R(s,a)+\gamma\sum\limits_{s'}
+%                P(s'|s,a)V_k(s')
+%                \right)$ 
+  }
+ }
+% Get $\pi(s) = \argmax\limits_a \left(
+%        R(s,a)+\gamma\sum\limits_{s'}
+%                P(s'|s,a)V_{\textrm{end}}(s')
+%                \right)$
+\end{algorithm}
+\vspace{-1mm}
+These algorithms assume Markov and require knowledge of the dynamics $P$. Instead, we can do (model-free) \textbf{Monte-Carlo} (requires fully observed finite episode). It is unbiased (assumes infinite-horizon problem (so that time-invariant policy) that is always eventually stopped (at the stopping time $T$)). 
+
+
+
+
+
+\underline{\textbf{MonteCarlo$(\pi)$}}
+\begin{algorithm}[H]
+$N(s)=0$, $G(s)=0$, \textcolor{blue}{$V^\pi(s)=0$} for all $s$ \\
+ \For{$i=0,\dots$}{
+    sample episode $(s_{i,1},a_{i,2},\dots,s_{i,T_i})$ with $a_{i,t}{\sim}\pi(s_t)$
+    \\
+    $G_{i,t}\gets r_{i,t}+\gamma r_{i,t+1}+\dots+\gamma^{T_i-1}r_{r_i,T_i}
+   $ for all $t$
+   \\
+    \For{$t=1,\dots,T_i$}{
+    $s\gets s_{i,t}$
+    \\
+    \If{$s$ visited for the \textbf{first} time in episode $i$}{
+        $N(s)=N(s)+1$
+        \\
+        $G(s)=G(s)+G_{i,t}$
+        \\
+        $V^\pi(s) =G(s)/N(s)$
+        \\
+        \scalebox{0.9}{\textcolor{blue}{($V^\pi(s) \gets V^\pi(s) + \alpha(G_{i,t}-V^\pi(s))$
+        (Incremental))}}
+        \\
+        \scalebox{0.9}{\textcolor{olive}{($\Delta w = \alpha (G_{i,t}-\phi(s_{i,t})^\top w)\phi(s_{i,t}) $
+        \ \ (MC linear))}}
+    }
+    }
+ }
+\end{algorithm}
+\vspace{-1mm}
+The above is \textbf{first-visit} MC. Without the \textit{if}, it is \textbf{every-visit} MC (which is biased but consistent and has better MSE).
+\\
+\textcolor{orange}{\underline{Modification to get $Q^\pi$}: use $N(s,a)=N(s,a)+1$ and set $Q^\pi(s,a) = Q^\pi(s,a) + \alpha(G_{i,t}-Q^\pi(s,a))$ with $\alpha=\frac{1}{N(s,a)}$.}
+
+
+\underline{\textbf{TD(0)$(\pi)$}} (instead of waiting for the full episode to finish)
+\begin{algorithm}[H]
+$V^\pi(s)=0$ for all $s$ \\
+ \For{$i=0,\dots$}{
+    sample tuple $(s_t,a_t,r_t,s_{t+1})$ with $a_{t}\sim\pi(s_t)$
+    \\
+    $V^\pi(s_t) \gets V^\pi(s_t) + \alpha\Big(\underbrace{(r_t+\gamma V^\pi(s_{t+1}))}_{\text{TD target \textit{(bootstrap})}}-V^\pi(s)\Big)$
+        \\
+        \scalebox{0.9}{\textcolor{olive}{($\Delta w = \alpha (r_t+\gamma\phi(s_{t+1})^\top w-\phi(s_t)^\top w)\phi(s_t) $
+        \ \ (TD$(0)$ linear))}}
+    }
+\end{algorithm}
+
+\underline{Certainty-Equivalence (\textbf{CE})} (MLE estimate for $P$ and $R$)
+\begin{algorithm}[H]
+ \For{$t=0,\dots$}{
+    sample tuple $(s_t,a_t,r_t,s_{t+1})$ with $a_{t}\sim\pi(s_t)$
+    \\
+    $\hat{P}(s'|s,a) = \frac{1}{N(s,a)}\sum\limits_{r=1}^t\mathbbm{1}(s_r=s,a_r=a,s_{r+1}=s')$
+    \\
+    $\hat{r}(s,a) = \frac{1}{N(s,a)}\sum\limits_{\ell=1}^t\mathbbm{1}(s_\ell=s,a_\ell=a)r_\ell$
+    }
+\end{algorithm}
+
+
+
+
+
+
+
+\underline{\textbf{SARSA} and \textcolor{blue}{\textbf{Q-Learning}}} with $\epsilon$-greedy policy
+\begin{algorithm}[H]
+$a_0\sim\pi(s_0)$ w.p. $1-\epsilon$ else $a_0\gets\text{random}(A)$
+\\
+Observe $(r_0,s_1)$
+\\
+ \For{$t=0,\dots$}{
+ Take $a_{t+1}\sim\pi(s_{t+1})$, observe  $(r_{t+1}, s_{t+2})$
+    \\
+    $Q(s_t,a_t) \scalebox{1}{$\gets Q(s_t,a_t) + \alpha(r_t+\gamma Q(s_{t+1},a_{t+1})-Q(s_t,a_t))$}$
+    \\
+    \textcolor{blue}{$Q(s_t,a_t) \scalebox{1}{$\gets Q(s_t,a_t) + \alpha(r_t+\gamma \mathop{\max}\limits_{a}Q(s_{t+1},a)-Q(s_t,a_t))$}$}
+    \\
+    \scalebox{1}{$\pi(s)\gets\{\mathop{\arg\max}\limits_{a}Q(s,a)$ w.p. $1-\epsilon$ else $\text{random}(A)\}$}
+    }
+\end{algorithm}
+\textbf{SARSA} (an \textit{on-policy} algorithm) uses every element of the tuple $(s_t,a_t,r_t,s_{t+1},a_{t+1})$. \textbf{Q-Learning} (\textit{off-policy}) allows learning optimum from arbitrary policies (only used for exploration) but suffers from the maximization bias. Thus, \textbf{Double Q-Learning} separates max action estimation with max value estimation: with probability 1/2, alternate between $Q_1$ and $Q_2$: for $1$, set \textcolor{blue}{$a^{*1}_{t+1}=\mathop{\arg\max}\limits_{a}Q_1(s_{t+1},a)$} and evaluate
+\vspace{-3mm}
+\begin{center}
+\scalebox{1}{$
+\textcolor{blue}{Q_1}(s_t,a_t) \gets \textcolor{blue}{Q_1}(s_t,a_t) + \alpha(r_t+\gamma \textcolor{red}{Q_2}(s_{t+1},\textcolor{blue}{a^{*1}_{t+1}})-\textcolor{blue}{Q_1}(s_t,a_t))$}
+\\
+    \scalebox{1}{$\pi(s)\gets\{\mathop{\arg\max}\limits_{a}(\textcolor{blue}{Q_1}+\textcolor{red}{Q_2})(s,a)$ w.p. $1-\epsilon$ else $\text{rand}(A)\}$}
+\end{center}
+
+
+
+
+
+\subsubsection{Value function approximation}
+\scalebox{0.85}{$S$ and $A$ are assumed finite-dim. Define the loss $
+J(w)=\mathbb{E}_\pi[(V^\pi(s)-\hat{V}^\pi(s;w))^2]$. } 
+\scalebox{0.875}{Then, supervised learning: $
+%J(w)=\mathbb{E}_\pi[(V^\pi(s)-\hat{V}^\pi(s;w))^2],
+%\ \ 
+\Delta w\mathop{=}\limits^{\textrm{SGD}}-\frac{1}{2}\alpha\left(2\mathbb{E}_\pi[V^\pi(s)-\hat{V}^\pi(s;w)]\nabla_w\hat{V}^\pi(s;w)\right)
+$}
+\underline{\textbf{Linear}}: \scalebox{1}{$\hat{V}(s;w)=\phi(s)^\top w\implies \nabla_w\hat{V}(s;w)=\phi(s)$. 
+\phantom{$1_{1_{1_1}}$}}
+
+\underline{\textbf{MC \textcolor{olive}{$\pi$ evaluation}}}: dataset $\{(s_t,G_t)\}_t$, use $ V^\pi(s_t)\approx G_t$
+
+Converges to min	 $\textrm{MSVE}_\mu(w)=\sum\limits_s\mu(s)(V^\pi(s)-\hat{V}^\pi(s;w))^2$
+
+
+\underline{\textbf{TD \textcolor{olive}{$\pi$ evaluation}}}: dataset $\{(s_t,r_t+\gamma\hat{V}^\pi(s_{t+1};w))\}_t$%\approx \{(s_t,V^\pi(s_t))\}_t$
+
+\scalebox{1}{Let $d(s)$ stationary distribution s.t. $d(s')=\sum\limits_s\sum\limits_a\pi(a|s)p(s'|s,a)d(s)$}
+
+\scalebox{0.95}{Converges to min $\textrm{MSVE}_d(w_{TD})\leq\frac{1}{1-\gamma}\min\limits_w
+\sum\limits_sd(s)(V^\pi(s)-\hat{V}^\pi(s;w))^2$}
+
+\underline{\textbf{SARSA},  \textcolor{blue}{\textbf{Q-Learning}}, and \textcolor{orange}{MC control}}: do the same for $Q$:
+\begin{align*}
+    \Delta w&=
+    \alpha(r+\gamma \hat{Q}(s',a';w)-\hat{Q}(s,a;w))\nabla_w \hat{Q}(s,a;w)
+    \\
+    \textcolor{blue}{\Delta w}&=
+    \textcolor{blue}{\alpha(r+\gamma \max\limits_{a'}\hat{Q}(s',a';w)-\hat{Q}(s,a;w))\nabla_w \hat{Q}(s,a;w)}
+    \\
+    \textcolor{orange}{\Delta w}&\textcolor{orange}{=
+    \alpha(G_t-\hat{Q}(s_t,a_t;w))\nabla_w \hat{Q}(s_t,a_t;w)}
+\end{align*}
+Instability: (1) function approx (2) bootstrapping (3) off-policy
+
+\vspace{1mm}
+
+\underline{\textbf{Deep Q-Learning}}: (1) correlated samples (2) non-stationary \scalebox{1}{targets are addressed via (a) \textcolor{olive}{experience replay} (b) \textcolor{blue}{fixed Q-targets}  
+}
+\begin{algorithm}[H]
+ \For{$t=0,\dots$}{
+ Sample $a_t$ given $\epsilon$-greedy policy from $\hat{Q}(s_t,a;w)$
+ \\
+ Observe $(r_t,s_{t+1})$
+ \\
+ \textcolor{olive}{Store $(s_t,a_t,r_t,s_{t+1})$ in replay buffer $D$}
+ \\
+ \textcolor{olive}{Sample minibatch from $D$}
+ \\
+ \For{\textcolor{olive}{tuple in minibatch}}{
+ \scalebox{1}{$\Delta w=\alpha(r+\gamma \max\limits_{a'}\textcolor{blue}{\hat{Q}(}s',a';\textcolor{blue}{w^-)}-\hat{Q}(s,a;w))\nabla \hat{Q}(s,a;w)$}
+%\\
+%$
+%\textcolor{blue}{Q_1}(s_t,a_t) \gets \textcolor{blue}{Q_1}(s_t,a_t) + \alpha(r_t+\gamma \textcolor{red}{Q_2}(s_{t+1},\textcolor{blue}{a^{*1}_{t+1}})-\textcolor{blue}{Q_1}(s_t,a_t))$
+ 	}
+ \textcolor{blue}{\If{sometimes}{$w^-\gets w$}}
+ }
+\end{algorithm}
+
+\textbf{Double DQN} even better
+$$\Delta w=\alpha(r+\gamma \hat{Q}(s',\mathop{\arg\max}\limits_{a'}\hat{Q}(s'a';w);w^-)-\hat{Q}(sa;w))\nabla \hat{Q}(sa;w)$$
+
+\textbf{Prioritized Experience Replay}: select $i$th tuple such that 
+$$p_i=|
+r+\gamma\max_{a'}Q(s',a';w^-)-Q(s,a;w)
+|
+\ \ \text{$\forall i$th tuple in $D$}$$
+\scalebox{1}{then choose $i$th tuple $(s,a,r,s')\in D$ for $\Delta w$ update with $\max\limits_ip_i$.} 
+\scalebox{1}{Else, select with stochastic
+prioritization, where \smash{$P(i)=p_i^\beta/\left(\sum_j p_j^\beta\right)$}.}
+
+\vspace{1mm}
+
+\scalebox{1}{\textbf{Advantage Function} (Dueling DQN) Features to represent $V$ well} may be
+different than those to compare $Q(s,a_1)$ vs $Q(s,a_2)$.	
+$$\text{Define }\quad 
+A^\pi(s,a)=
+Q^\pi(s,a)-
+V^\pi(s). \quad \text{Then, to get $\hat{Q}$:}
+$$
+\begin{align*}
+\hat{Q}(s,a;w)&=\hat{V}(s;w)+\Big(\hat{A}(s,a;w)-\max\limits_{a'}\hat{A}(s,a';w)\Big)
+\\[-2mm]
+\hat{Q}(s,a;w)&=\hat{V}(s;w)+\Big(\hat{A}(s,a;w)-\frac{1}{A}\sum_{a'}\hat{A}(s,a';w)\Big)
+\end{align*}
+
 
 \newpage
+\textbf{Summary}:
+\begin{itemize}[leftmargin=4.5mm]
+\item \textbf{Model-based RL} 
+\begin{itemize}[leftmargin=2.5mm]
+\item[+] \textit{easy} to learn a model (supervised learning)
+\item[+] learns \textit{all there is to know} from the data
+\item[-] uses compute \& capacity on irrelevant details
+\item[-] computing $\pi$ (planning) non-trivial / expensive
+\end{itemize}
+\item \textbf{Value-based RL}
+\begin{itemize}[leftmargin=2.5mm]
+\item[+] easy to get policy (e.g., $\pi(a|s) = \mathbbm{1}(a = \arg\max Q(s, a))$)
+\item[+] close to true objective
+\item[+] fairly well-understood, good algorithms exist
+\item[-] still not the true objective (may focus capacity on irrelevant details, small value error can lead to larger policy error)
+\end{itemize}
+\item \textbf{Policy-based RL}
+\begin{itemize}[leftmargin=2.5mm]
+\item[+] true objective
+\item[+] easy to extend to high-dim or continuous $A$
+\item[+] can learn stochastic policies
+\item[+] policies can be simple compared to values / models
+\item[-] local minima
+\item[-] does not always generalise well
+%\item[-] does not necessarily extract all useful information from data
+\end{itemize}
+\end{itemize}
 
-\begin{multicols}{3}
+%\begin{figure}[!htb]
+%\FloatBarrier
+%\includegraphics[width=\linewidth]{./images/Lecture9-Policy_gradients_and_actor_critics_deepmind-reinforcement-learning-series-2021.png}
+%\includegraphics[width=\linewidth]{./images/policy_adv_dis.png}
+\includegraphics[width=\linewidth]{./images/actorcritics.png}
+%\end{figure}FloatBarrier
 
-\subsection{Value Iteration}
-We can avoid to wait until $V(s)$ has converged and instead do policy improvement and truncated policy evaluation step in one operation
+\vspace{2mm}
+
+\underline{\textbf{Policy learning}}: directly learn $\pi_\theta(s,a)$ minimizing $V(\theta)$.
+\\[2mm]
+%\textit{Score function}: $\nabla_\theta\log\pi_\theta(s,a)$.
+
+\textbf{Softmax policy}: \smash{$\pi_\theta(s,a)=e^{\phi(s,a)^\top\theta}/\left(\sum\limits_a e^{\phi(s,a)^\top\theta}\right)$}. 
+
+\textit{Score function}: $\nabla_\theta\log\pi_\theta(s,a)=\phi(s,a)-\mathbb{E}_{\pi_\pi}[\phi(s,a)].
+$
+
+\textbf{Gaussian policy}: \smash{$\pi_\theta(a(s)\sim\mathcal{N}(\mu_\theta(s), \sigma^2)$}. 
+
+\textit{Score function}: $\nabla_\theta\log\pi_\theta(s,a)=
+\frac{(a-\mu_\theta(s))}{\sigma^2}\nabla\mu_\theta(s)$
+
+\vspace{2mm}
+
+\textcolor{red}{TODO add derivations for $\nabla V(\theta)$ to get the score function term}
+\textcolor{red}{TODO add derivations for $\nabla V(\theta)$ to get the score function term}
+\textcolor{red}{TODO add derivations for $\nabla V(\theta)$ to get the score function term}
+
+\vspace{2mm}
+
+\underline{\textbf{Reinforce:}} uses $\Delta\theta_t=\nabla_\theta \log\pi_\theta(s_t,a_t)G_t$
 \begin{algorithm}[H]
-  \SetKwInOut{Output}{ouput}
- Initialise $V(s) \in \mathbb{R}, \text{e.g} V(s) = 0$ \\
- $\Delta \leftarrow 0$ \\
- \While{$\Delta \ge \theta$ (a small positive number)}{
-  \ForEach{$s \in S$} {
-        $v \leftarrow V(s)$\\
-        $V(s) \leftarrow \max\limits_a \sum\limits_{s', r} p(s',r | s, a) \begin{bmatrix}
-                r + \gamma V(s')
-        \end{bmatrix}$ \\
-        $\Delta \leftarrow \max(\Delta, | v - V(s)|)$
-  }
- }
- \Output{Deterministic policy $\pi \approx \pi_*$ such that}
- $\pi(s) = \argmax\limits_a \sum\limits_{s', r} p(s',r | s, a) \begin{bmatrix}
-     r + \gamma V(s')
-  \end{bmatrix}$
-\caption{Value Iteration}
-\end{algorithm}
-
-\section{Monte Carlo Methods}
-Monte Carlo (MC) is a \emph{Model Free} method, It does not require complete knowledge of the environment. It is based on \textbf{averaging sample returns} for each state-action pair. The following algorithm gives the basic implementation
-
-\begin{algorithm}[H]
- Initialise for all $s \in S, a \in A(s):$ \\
-        $\quad Q(s,a) \leftarrow \text{arbitrary}$ \\
-        $\quad \pi(s) \leftarrow \text{arbitrary}$ \\
-        $\quad Returns(s,a) \leftarrow \text{empty list}$ \\
-
- \While{forever}{
-    Choose $S_0 \in S$ and $A_0 \in A(S_0)$, all pairs have probability $ > 0$ \\
-    Generate an episode starting at $S_0, A_0$ following $\pi$
-    \ForEach{pair $s,a$ appearing in the episode}{
-        $G \leftarrow$ return following the first occurrence of $s,a$ \\
-        Append $G$ to $Returns(s,a))$ \\
-        $Q(s,a) \leftarrow average(Returns(s,a))$ \\
-    }
-    \ForEach{$s$ in the episode}{
-        $\pi(s) \leftarrow \argmax\limits_a Q(s,a)$
-    }
- }
-\caption{Monte Carlo first-visit }
-\end{algorithm}
-% }
-For non-stationary problems, the Monte Carlo estimate for, e.g, $V$ is:
-\begin{equation}
-V(S_t) \leftarrow V(S_t) + \alpha \begin{bmatrix}
-        G_t - V(S_t)
-\end{bmatrix}
-\end{equation}
-Where $\alpha$ is the learning rate, how much we want to forget about past experiences.
-
-\section{Sarsa}
-
-Sarsa (State-action-reward-state-action) is a on-policy TD control. The update rule:
-
-\begin{equation*}
-    Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha \left[r_t + \gamma Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t) \right]
-\end{equation*}
-
-\subsection{$n$-step Sarsa}
-
-Define the $n$-step Q-Return
-
-\begin{equation*}
-    q^{(n)} = R_{t+1} + \gamma R{t+2} + \ldots + \gamma^{n-1} R_{t+n} + \gamma^n Q(S_{t+n})
-\end{equation*}
-
-$n$-step Sarsa update $Q(S, a)$ towards the $n$-step Q-return
-
-\begin{equation*}
-    Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha \left[q_t^{(n)} - Q(s_t, a_t) \right]
-\end{equation*}
-
-\subsection{Forward View Sarsa($\lambda$)}
-
-\begin{equation*}
-    q_t^\lambda = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} q_t^{(n)}
-\end{equation*}
-
-Forward-view Sarsa($\lambda$):
-
-\begin{equation*}
-    Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha \left[q_t^\lambda - Q(s_t, a_t) \right]
-\end{equation*}
-
-\begin{algorithm}[H]
- Initialise $Q(s,a)$ arbitrarily and $Q(terminal-state, ·) = 0$\\
-  \ForEach{episode $\in$ episodes}{
-        Choose $a$ from $s$ using policy derived from $Q$ (e.g., $\epsilon$-greedy) \\
-        \While{$s$ is not terminal} {
-        Take action $a$, observer $r, s'$ \\
-        Choose $a'$ from $s'$ using policy derived from $Q$ (e.g., $\epsilon$-greedy) \\
-                $Q(s,a) \leftarrow Q(s,a) + \alpha  \begin{bmatrix}
-r +  \gamma Q(s',a') - Q(s,a)
-\end{bmatrix}$\\
-        $s \leftarrow s'$ \\
-        $a \leftarrow a'$
+ \For{each episode $(s_1,a_1,r_1,\dots,s_{T-1},\dots,r_T)\sim\pi_\theta$}{
+ \For{$t=1,\dots,T-1$}{
+        $\Delta\theta=\alpha\nabla_\theta\log\pi_\theta(a_t|s_t)G_t$
         }
  }
-    \caption{Sarsa($\lambda$)}
 \end{algorithm}
 
-\section{Temporal Difference - Q Learning}
-Temporal Difference (TD) methods learn directly from raw experience without a model of the environment's dynamics. TD substitutes the expected discounted reward $G_t$ from the episode with an estimation:
-\begin{equation}
-V(S_t) \leftarrow V(S_t) + \alpha \begin{bmatrix}
- R_{t + 1} + \gamma V(S_{t+1}) - V(S_t)
-\end{bmatrix}
-\end{equation}
-The following algorithm gives a generic implementation.
+\textbf{Baseline} $b(s)$ to reduce variance:
+$$
+\theta_{t+1}=\theta_t+\alpha(r_{t+1}-b(s_t))\nabla_\theta\log\pi_\theta(a_t|s_t)$$
+
+\textbf{Actor-Critic}: use $\hat{V}^\pi(s;w)$ (estimated) as baseline
+
+\vspace{2mm}
+
+\underline{\textbf{1-step Actor-Critic:}}
 \begin{algorithm}[H]
- Initialise $Q(s,a)$ arbitrarily and $Q(terminal-state, ·) = 0$\\
-  \ForEach{episode $\in$ episodes}{
-        \While{$s$ is not terminal} {
-        Choose $a$ from $s$ using policy derived from $Q$ (e.g., $\epsilon$-greedy) \\
-        Take action $a$, observer $r, s'$ \\
-        $Q(s,a) \leftarrow Q(s,a) + \alpha  \begin{bmatrix}
-r +  \gamma \max\limits_{a'}Q(s',a') - Q(s,a)
-\end{bmatrix}$\\
-        $s \leftarrow s'$
+ \For{$t=1,\dots,T-1$}{
+ Sample $a_t\sim\pi_\theta(a|s_t)$, observe $(r_t,s_{t+1})$
+ \\
+ \scalebox{1}{$\delta_t=r_t+\gamma \hat{V}_w(s_{t+1})-\hat{V}_w(s_t)$\ \ \scalebox{0.9}{(1step TDerror/advantage)}}
+ \\ 
+ $w\gets w+\beta\delta_t\nabla_w \hat{V}_w(s_t)$ \qquad \quad \ \scalebox{0.9}{(TD(0))}
+ \\ 
+ $\theta\hspace{0.8mm}\gets\theta\hspace{0.7mm}+\alpha\delta_t\nabla_\theta\log\pi_\theta(a_t|s_t)$
+ \ \ \ \scalebox{0.9}{(policy gradient)}
         }
- }
-\caption{Q Learning}
 \end{algorithm}
 
+\vspace{1mm}
 
-\section{Deep Q Learning}
-Created by $DeepMind$, Deep Q Learning, DQL, substitutes the $Q$ function with a deep neural network called \emph{Q-network}. It also keep track of some observation in a $memory$ in order to use them to train the network.
-\begin{equation}
-L_i(\theta_i) = \mathbb{E}_{(s, a, r, s') \sim U(D)}\begin{bmatrix}
-        ( \underbrace{r + \gamma \max\limits_a Q(s',a'; \theta_{i-1})}_\text{target} - \underbrace{Q(s,a;\theta_i)}_\text{prediction})^2
-\end{bmatrix}
-\end{equation}
-Where $\theta$ are the weights of the network and $U(D)$ is the experience replay history.
+\textbf{Increasing stability} (TRPO,PPO): add KL regularization to 
+\scalebox{1}{an older policy $\pi_{\textrm{old}}$:
+do policy gradient with $J(\theta)-\eta\textrm{KL}(\pi_{\textrm{old}},\pi_\theta)$:}
+ $$
+ \textrm{KL}(\pi_{\textrm{old}}\|\pi_\theta)=\mathbb{E}_s\left[\int_A\pi_{\textrm{old}}(a|s)
+\log\frac{\pi_{\textrm{old}}(a|s)}{\pi_\theta(a|s)}
+\textrm{d}a\right]
+$$
 
-\begin{algorithm}[H]
- Initialise replay memory $D$ with capacity $N$\\
- Initialise $Q(s,a)$ arbitrarily \\
- \ForEach{episode $\in$ episodes}{
-        \While{$s$ is not terminal} {
-         With probability $\epsilon$ select a random action $a \in A(s)$ \\
-         otherwise select $a = \max_a Q(s, a; \theta)$ \\
-         Take action $a$, observer $r, s'$ \\
-         Store transition $(s, a, r, s')$ in $D$ \\
-         Sample random minibatch of transitions $(s_j, a_j, r_j, s'_j)$ from $D$ \\
-         $\text{Set } y_j \leftarrow
-           \begin{cases}
-               r_j & \text{for terminal } s_j'\\
-               r_j + \gamma \max\limits_a Q(s',a'; \theta) & \text{for non-terminal } s'_j
-           \end{cases}$ \\
-         Perform gradient descent step on $(y_j - Q(s_j, a_j;\Theta))^2 $ \\
-         $s \leftarrow s'$
-        }
- }
-\caption{Deep Q Learning}
-\end{algorithm}
+\newpage
+\FloatBarrier
 
 %---------------------------------------------------------------------------
 
-\rule{0.3\linewidth}{0.25pt} \\
-Copyright \copyright\ 2018 Francesco Saverio Zuppichini
-
-\scriptsize
-
-\href{https://github.com/FrancescoSaverioZuppichini/Reinforcement-Learning-Cheat-Sheet}{https://github.com/FrancescoSaverioZuppichini/Reinforcement-Learning-Cheat-Sheet}
-
-\end{multicols}
-
-\newpage
-
-\begin{multicols}{3}
-
-\section{Double Deep Q Learning}
+%\rule{0.3\linewidth}{0.25pt} \\
+%Copyright \copyright\ 2018 Francesco Saverio Zuppichini
+%
+%\scriptsize
+%
+%\href{https://github.com/FrancescoSaverioZuppichini/Reinforcement-Learning-Cheat-Sheet}{https://github.com/FrancescoSaverioZuppichini/Reinforcement-Learning-Cheat-Sheet}
 
 \end{multicols}
+
+%\newpage
+%
+%\begin{multicols}{3}
+%
+%\section{Double Deep Q Learning}
+%
+%\end{multicols}
 
 \end{document}

@@ -1,17 +1,5 @@
 # Reinforcement-Learning-Cheat-Sheet
 
-**WORK IN PROGRESS**
+Credits for the great template: see [https://github.com/FrancescoSaverioZuppichini/Reinforcement-Learning-Cheat-Sheet](https://github.com/FrancescoSaverioZuppichini/Reinforcement-Learning-Cheat-Sheet). 
 
-Cheatsheet for basic Reinforcement Learning concepts and methods. 
-
-## TODO
-
-- add double QL
-- add double DQL
-- add A3C
-- add IMPALA
-- add NeuroEvolution
-
-## How to contribute
-
-If you spot an error or you want to add somethings, just edit the latex and create a pull request
+[CS234 - RL - Winter 2022](https://web.stanford.edu/class/cs234/) cheatsheet with some notes from [DeepMind's RL Lecture Series 2021](https://deepmind.com/learning-resources/reinforcement-learning-series-2021). Of course, it only provides an overview and misses some details.
