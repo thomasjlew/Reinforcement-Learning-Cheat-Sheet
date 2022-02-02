@@ -1,4 +1,8 @@
 \documentclass[10pt,landscape]{article}
+
+%
+\usepackage[T1]{fontenc}
+
 \usepackage{multicol}
 \usepackage{calc}
 \usepackage{ifthen}
@@ -454,30 +458,127 @@ $$
 %\FloatBarrier
 %\includegraphics[width=\linewidth]{./images/Lecture9-Policy_gradients_and_actor_critics_deepmind-reinforcement-learning-series-2021.png}
 %\includegraphics[width=\linewidth]{./images/policy_adv_dis.png}
-\includegraphics[width=\linewidth]{./images/actorcritics.png}
+\includegraphics[width=0.9\linewidth]{./images/actorcritics.png}
 %\end{figure}FloatBarrier
 
 \vspace{2mm}
 
-\underline{\textbf{Policy learning}}: directly learn $\pi_\theta(s,a)$ minimizing $V(\theta)$.
-\\[2mm]
-%\textit{Score function}: $\nabla_\theta\log\pi_\theta(s,a)$.
+\underline{\textbf{Policy learning}}: directly learn $\pi_\theta(s,a)$ minimizing $V(\theta)$:
+\begin{align*}
+V(s_0,\theta)
+&=\mathbb{E}_{\pi_\theta}\left[\sum_{t=0}^T R(s_t,a_t)\right]
+=\mathbb{E}_{\pi_\theta}\left[
+Q(s_0,\cdot,\theta)
+\right]
+\\
+&=
+\sum_{\tau=(s_0,a_0,r_0,\dots,r_{T-1},s_T)}P(\tau;\theta)R(\tau).
+\end{align*}
+\textbf{Policy Gradient Theorem:} if $\pi_\theta$ differentiable,
+$$
+\nabla_\theta V(\theta)=\mathbb{E}_{\pi_\theta}\left[
+\nabla_\theta\log\pi_\theta(s,\cdot)Q(s_0,\cdot,\theta)
+\right].
+$$
+Its gradient can be approximated as
+\begin{align*}
+\nabla_\theta V(\theta)
+&=\nabla_\theta\sum_{\tau}P(\tau;\theta)R(\tau)=\sum_\tau R(\tau)\nabla_\theta P(\tau;\theta)
+\\
+&=\sum_\tau
+R(\tau)P(\tau;\theta)
+\nabla_\theta \log P(\tau;\theta)\\
+&\approx \frac{1}{M}\sum_{i=1}^M
+R(\tau^i)
+\nabla_\theta \log P(\tau^i;\theta)
+\\
+&=
+\frac{1}{M}\sum_{i=1}^M
+R(\tau^i)
+\left(
+\sum_{t=0}^{T-1}\nabla_\theta \log \pi_\theta(a_t|s_t)\right),
+\end{align*}
+where the last step follows from the fact that
+$$
+P(\tau^i;\theta)
+=
+\mu(s_0)\prod_{t=0}^{T-1}\pi_\theta(a_t|s_t)P(s_{t+1}|s_t,a_t).
+$$
 
-\textbf{Softmax policy}: \smash{$\pi_\theta(s,a)=e^{\phi(s,a)^\top\theta}/\left(\sum\limits_a e^{\phi(s,a)^\top\theta}\right)$}. 
+\textit{Another derivation}: if we exploit the temporal structure, then reward at time $t$ doesnt depend on future timesteps: 
+$$\nabla_\theta \mathbb{E}[r_t]=\mathbb{E}\left[
+r_t\sum_{r=0}^t\nabla_\theta\log \pi_\theta(a_t|s_t)
+\right].
+$$
+Thus, 
+\begin{align*}
+\nabla_\theta V(\theta)
+%&=
+%\mathbb{E}_\tau\left[
+%R(\tau)
+%\left(
+%\sum_{t=0}^{T-1}\nabla_\theta \log \pi_\theta(a_t|s_t)\right)\right]
+%\\
+%&\approx
+%\frac{1}{M}\sum_{i=1}^M
+%R(\tau^i)
+%\left(
+%\sum_{t=0}^{T-1}\nabla_\theta \log \pi_\theta(a_t|s_t)\right)
+%\\
+%&=
+%\frac{1}{M}\sum_{i=1}^M
+%\left(
+%\sum_{t=0}^{T-1}r_t\right)
+%\left(
+%\sum_{t=0}^{T-1}\nabla_\theta \log \pi_\theta(a_t|s_t)\right)
+%
+%
+&=
+\mathbb{E}_\tau\left[
+\sum_{t'=0}^{T-1}r_{t'}
+\left(
+\sum_{t=0}^{t'}\nabla_\theta \log \pi_\theta(a_t|s_t)\right)\right]
+\\
+&=
+\mathbb{E}_\tau\left[
+\sum_{t=0}^{T-1}\nabla_\theta \log \pi_\theta(a_t|s_t)
+\sum_{t'=t}^{T-1}r_{t'}
+\right]
+\\
+&\approx
+\frac{1}{M}\sum_{i=1}^M\sum_{t=0}^{T-1}\nabla_\theta \log \pi_\theta(a_t^i|s_t^i)
+G_{t}^i.
+\end{align*}
+
+Note that one can add a baseline to reduce variance:
+\begin{align*}
+\nabla_\theta V(\theta)
+&=
+\mathbb{E}_\tau\left[
+\sum_{t=0}^{T-1}\nabla_\theta \log \pi_\theta(a_t|s_t)
+\left(\sum_{t'=t}^{T-1}r_{t'}-b(s_t)\right)
+\right].
+\end{align*}
+Does not introduce bias. Near optimal choice is the  expected return
+$b(s_t)\approx\mathbb{E}[r_t+r_{t+1}+\dots+r_{T-1}]$. 
+
+\textbf{Softmax policy}: $\pi_\theta(s,a)=e^{\phi(s,a)^\top\theta}/\left(\sum\limits_a e^{\phi(s,a)^\top\theta}\right)$. 
 
 \textit{Score function}: $\nabla_\theta\log\pi_\theta(s,a)=\phi(s,a)-\mathbb{E}_{\pi_\pi}[\phi(s,a)].
 $
+\\[2mm]
 
-\textbf{Gaussian policy}: \smash{$\pi_\theta(a(s)\sim\mathcal{N}(\mu_\theta(s), \sigma^2)$}. 
+\textbf{Gaussian policy}: $\pi_\theta(a(s)\sim\mathcal{N}(\mu_\theta(s), \sigma^2)$. 
 
 \textit{Score function}: $\nabla_\theta\log\pi_\theta(s,a)=
 \frac{(a-\mu_\theta(s))}{\sigma^2}\nabla\mu_\theta(s)$
 
 \vspace{2mm}
 
-\textcolor{red}{TODO add derivations for $\nabla V(\theta)$ to get the score function term}
-\textcolor{red}{TODO add derivations for $\nabla V(\theta)$ to get the score function term}
-\textcolor{red}{TODO add derivations for $\nabla V(\theta)$ to get the score function term}
+
+
+
+
 
 \vspace{2mm}
 
